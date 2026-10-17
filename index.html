@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#000000"><meta name="description" content="Gerador aleatório de 0 a 100 com intervalo personalizável.">
+<meta name="theme-color" content="#000000"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="description" content="Gerador aleatório de 0 a 100 com intervalo personalizável.">
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>RNG</title>
 <style>
@@ -38,7 +38,10 @@ const settings=document.getElementById('settings');
 const intervalText=document.getElementById('intervalText');
 const errorEl=document.getElementById('intervalError');
 const progress=document.getElementById('progress');
-let intervalMs=1500,timer=null,frame=null,cycleStart=0;
+let intervalMs=1500,timer=null,frame=null,cycleStart=0,wakeLock=null;
+async function keepScreenOn(){if(!('wakeLock' in navigator))return;try{if(document.visibilityState==='visible'&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null;});}}catch(e){wakeLock=null;}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')keepScreenOn();});
+window.addEventListener('pageshow',keepScreenOn);
 function randomInt(){const range=101,max=0x100000000,limit=Math.floor(max/range)*range,buffer=new Uint32Array(1);let value;do{crypto.getRandomValues(buffer);value=buffer[0]}while(value>=limit);return value%range}
 function draw(){numberEl.textContent=String(randomInt())}
 function animate(){const elapsed=(performance.now()-cycleStart)%intervalMs;progress.style.width=((elapsed/intervalMs)*100)+'%';frame=requestAnimationFrame(animate)}
@@ -48,6 +51,7 @@ function applyInterval(){const raw=input.value.trim().replace(',','.');const sec
 toggleBtn.addEventListener('click',()=>{const open=settings.hidden;settings.hidden=!open;toggleBtn.setAttribute('aria-expanded',String(open));});
 applyBtn.addEventListener('click',()=>{applyInterval();if(!errorEl.textContent){settings.hidden=true;toggleBtn.setAttribute('aria-expanded','false')}});
 input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyInterval()}});
+keepScreenOn();
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 startCycle();
 })();
