@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000"><meta name="description" content="Gerador aleatório de 0 a 100.">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>RNG</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#000;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+body{min-height:100dvh;display:flex;justify-content:center;align-items:center;padding:24px}main{width:min(100%,420px);text-align:center}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:clamp(42px,12vh,90px)}.brand{font-size:12px;font-weight:800;letter-spacing:.22em}
+.status{display:flex;align-items:center;gap:7px;color:#929292;font-size:11px;letter-spacing:.08em}.dot{width:7px;height:7px;border-radius:50%;background:#fff}.dot.paused{background:#555}
+.label{font-size:11px;color:#929292;letter-spacing:.22em;font-weight:700}#number{font-size:clamp(112px,31vw,168px);font-weight:750;line-height:1;letter-spacing:-.08em;font-variant-numeric:tabular-nums;margin:20px 0 18px}
+.interval{font-size:13px;color:#929292}.track{height:2px;background:#242424;margin:36px 0 28px;overflow:hidden}#progress{height:100%;width:0;background:#fff}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}button{min-height:54px;border:1px solid #fff;border-radius:14px;background:#fff;color:#000;font:700 14px system-ui,sans-serif;cursor:pointer}
+button.secondary{background:#000;color:#fff}button:active{transform:scale(.985)}button:focus-visible{outline:2px solid #888;outline-offset:3px}.hint{margin-top:25px;font-size:11px;color:#696969;line-height:1.6}
+</style></head>
+<body><main>
+<header class="top"><div class="brand">RNG / 001</div><div class="status"><span id="dot" class="dot"></span><span id="status">ATIVO</span></div></header>
+<div class="label">NÚMERO ALEATÓRIO</div><div id="number" aria-live="polite">—</div>
+<div class="interval">0 — 100 · troca a cada 1,5 s</div><div class="track" aria-hidden="true"><div id="progress"></div></div>
+<div class="controls"><button id="toggle" type="button">PAUSAR</button><button id="reset" class="secondary" type="button">REINICIAR</button></div>
+<div class="hint">GERADOR LOCAL · SEM CONTA · SEM INTERNET APÓS INSTALAR</div>
+</main>
+<script>
+(() => {
+const INTERVAL=1500, numberEl=document.getElementById('number'), toggleBtn=document.getElementById('toggle'), resetBtn=document.getElementById('reset'), statusEl=document.getElementById('status'), dot=document.getElementById('dot'), progress=document.getElementById('progress');
+let running=true,timer=null,frame=null,cycleStart=0;
+function randomInt(){const range=101,max=0x100000000,limit=Math.floor(max/range)*range,buffer=new Uint32Array(1);let value;do{crypto.getRandomValues(buffer);value=buffer[0]}while(value>=limit);return value%range}
+function draw(){numberEl.textContent=String(randomInt())}
+function animate(){if(!running)return;const elapsed=(performance.now()-cycleStart)%INTERVAL;progress.style.width=((elapsed/INTERVAL)*100)+'%';frame=requestAnimationFrame(animate)}
+function start(){running=true;toggleBtn.textContent='PAUSAR';statusEl.textContent='ATIVO';dot.classList.remove('paused');draw();cycleStart=performance.now();clearInterval(timer);cancelAnimationFrame(frame);timer=setInterval(()=>{draw();cycleStart=performance.now()},INTERVAL);frame=requestAnimationFrame(animate)}
+function pause(){running=false;clearInterval(timer);timer=null;cancelAnimationFrame(frame);toggleBtn.textContent='CONTINUAR';statusEl.textContent='PAUSADO';dot.classList.add('paused');progress.style.width='0%'}
+toggleBtn.addEventListener('click',()=>running?pause():start());
+resetBtn.addEventListener('click',()=>{clearInterval(timer);cancelAnimationFrame(frame);draw();progress.style.width='0%';if(running){cycleStart=performance.now();timer=setInterval(()=>{draw();cycleStart=performance.now()},INTERVAL);frame=requestAnimationFrame(animate)}});
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+start();
+})();
+</script></body></html>
