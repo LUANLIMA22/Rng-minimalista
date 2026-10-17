@@ -8,30 +8,33 @@
 <style>
 :root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#000;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
 body{min-height:100dvh;display:flex;justify-content:center;align-items:center;padding:24px}main{width:min(100%,420px);text-align:center}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:clamp(35px,9vh,70px)}.brand{font-size:12px;font-weight:800;letter-spacing:.22em}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:clamp(18px,5vh,42px)}.brand{font-size:12px;font-weight:800;letter-spacing:.22em}
 .status{display:flex;align-items:center;gap:7px;color:#929292;font-size:11px;letter-spacing:.08em}.dot{width:7px;height:7px;border-radius:50%;background:#fff}
-.label{font-size:11px;color:#929292;letter-spacing:.22em;font-weight:700}#number{font-size:clamp(112px,31vw,168px);font-weight:750;line-height:1;letter-spacing:-.08em;font-variant-numeric:tabular-nums;margin:20px 0 18px}
-.interval{font-size:13px;color:#929292}.track{height:2px;background:#242424;margin:30px 0 28px;overflow:hidden}#progress{height:100%;width:0;background:#fff}
-.settings{text-align:left;border:1px solid #292929;border-radius:16px;padding:18px;margin-top:25px}.field-label{display:block;font-size:11px;color:#aaa;letter-spacing:.16em;font-weight:700;margin-bottom:10px}
-.input-row{display:flex;gap:10px}input{width:100%;min-width:0;border:1px solid #555;border-radius:12px;background:#080808;color:#fff;padding:14px 15px;font:600 18px system-ui,sans-serif;outline:none}input:focus{border-color:#fff}button{width:100%;min-height:48px;margin-top:10px;border:1px solid #fff;border-radius:12px;background:#fff;color:#000;font:750 12px system-ui,sans-serif;letter-spacing:.08em;cursor:pointer}button:active{transform:scale(.99)}button:focus-visible{outline:2px solid #888;outline-offset:3px}.hint{margin-top:18px;font-size:11px;color:#696969;line-height:1.6}.error{min-height:17px;margin-top:8px;color:#ffb4b4;font-size:12px}
+.label{font-size:11px;color:#929292;letter-spacing:.22em;font-weight:700}#number{font-size:clamp(150px,48vw,230px);font-weight:800;line-height:1;letter-spacing:-.08em;font-variant-numeric:tabular-nums;margin:14px 0 12px}
+.interval{font-size:13px;color:#929292}.track{display:none}#progress{height:100%;width:0;background:#fff}
+.settings{text-align:left;border:1px solid #292929;border-radius:14px;padding:14px;margin-top:16px}.settings[hidden]{display:none}.field-label{display:block;font-size:11px;color:#aaa;letter-spacing:.16em;font-weight:700;margin-bottom:10px}
+.input-row{display:flex;gap:10px}input{width:100%;min-width:0;border:1px solid #555;border-radius:12px;background:#080808;color:#fff;padding:14px 15px;font:600 18px system-ui,sans-serif;outline:none}input:focus{border-color:#fff}button{width:auto;min-height:32px;padding:0 12px;margin-top:8px;border:1px solid #777;border-radius:9px;background:#080808;color:#fff;font:650 10px system-ui,sans-serif;letter-spacing:.05em;cursor:pointer}#toggleSettings{display:block;margin:20px auto 0}#apply{min-height:30px}button:active{transform:scale(.99)}button:focus-visible{outline:2px solid #888;outline-offset:3px}.hint{margin-top:18px;font-size:11px;color:#696969;line-height:1.6}.error{min-height:17px;margin-top:8px;color:#ffb4b4;font-size:12px}
 </style></head>
 <body><main>
 <header class="top"><div class="brand">RNG / 001</div><div class="status"><span class="dot"></span><span>ATIVO</span></div></header>
 <div class="label">NÚMERO ALEATÓRIO</div><div id="number" aria-live="polite">—</div>
 <div class="interval" id="intervalText">0 — 100 · troca a cada 1,5 s</div><div class="track" aria-hidden="true"><div id="progress"></div></div>
-<section class="settings" aria-label="Configurar intervalo">
+<button id="toggleSettings" type="button" aria-expanded="false">CONFIGURAR INTERVALO</button>
+<section class="settings" id="settings" aria-label="Configurar intervalo" hidden>
 <label class="field-label" for="intervalInput">INTERVALO (SEGUNDOS)</label>
 <div class="input-row"><input id="intervalInput" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="1,5" aria-describedby="intervalHelp intervalError"></div>
-<button id="apply" type="button">APLICAR INTERVALO</button>
+<button id="apply" type="button">APLICAR</button>
 <div class="hint" id="intervalHelp">Digite o tempo em segundos. Ex.: 1,8 ou 2,5.</div><div class="error" id="intervalError" role="status" aria-live="polite"></div>
 </section>
-<div class="hint">GERADOR LOCAL · SEM CONTA · FUNCIONA OFFLINE APÓS CARREGAR</div>
+
 </main>
 <script>
 (() => {
 const numberEl=document.getElementById('number');
 const input=document.getElementById('intervalInput');
 const applyBtn=document.getElementById('apply');
+const toggleBtn=document.getElementById('toggleSettings');
+const settings=document.getElementById('settings');
 const intervalText=document.getElementById('intervalText');
 const errorEl=document.getElementById('intervalError');
 const progress=document.getElementById('progress');
@@ -42,7 +45,8 @@ function animate(){const elapsed=(performance.now()-cycleStart)%intervalMs;progr
 function startCycle(){clearInterval(timer);cancelAnimationFrame(frame);draw();cycleStart=performance.now();timer=setInterval(()=>{draw();cycleStart=performance.now()},intervalMs);frame=requestAnimationFrame(animate)}
 function formatSeconds(ms){return String(Number((ms/1000).toFixed(3))).replace('.',',')}
 function applyInterval(){const raw=input.value.trim().replace(',','.');const seconds=Number(raw);if(!raw||!Number.isFinite(seconds)||seconds<0.1||seconds>3600){errorEl.textContent='Digite um valor entre 0,1 e 3600 segundos.';return}intervalMs=Math.round(seconds*1000);input.value=formatSeconds(intervalMs);errorEl.textContent='';intervalText.textContent='0 — 100 · troca a cada '+formatSeconds(intervalMs)+' s';startCycle()}
-applyBtn.addEventListener('click',applyInterval);
+toggleBtn.addEventListener('click',()=>{const open=settings.hidden;settings.hidden=!open;toggleBtn.setAttribute('aria-expanded',String(open));});
+applyBtn.addEventListener('click',()=>{applyInterval();if(!errorEl.textContent){settings.hidden=true;toggleBtn.setAttribute('aria-expanded','false')}});
 input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyInterval()}});
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 startCycle();
